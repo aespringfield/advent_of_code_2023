@@ -11,12 +11,16 @@ describe 'Day02' do
     end
   end
 
-  describe '.clean' do
-    it 'returns the cleaned data' do
-      expect(Day02.send(:clean, 'Game 17: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red')).to eq(
-        {
-          game: 17,
-          cubes: [
+  describe 'Line' do
+    let(:raw_line) { 'Game 17: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red' }
+    subject { Day02::Line.new(raw_line:) }
+
+    describe '.clean' do
+      it 'returns the cleaned data' do
+        game = subject.send(:clean, )
+        expect(game.index).to eq(17)
+        expect(game.cube_draws).to eq(
+          [
             {
               green: 1,
               red: 3,
@@ -32,8 +36,8 @@ describe 'Day02' do
               red: 14
             }
           ]
-        }
-      )
+        )
+      end
     end
   end
 end
