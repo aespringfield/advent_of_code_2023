@@ -22,9 +22,11 @@ module Day02
     private
 
     def clean(line)
+      game_index, cubes_string = line.match(/^Game (\d+): (.*)/).captures
+
       {
-        game: line.match(/^Game (\d+):/).captures.first.to_i,
-        cubes: line.split(':')[1].split(';').map do |str|
+        game: game_index.to_i,
+        cubes: cubes_string.split(';').map do |str|
           str.scan(/(\d+) (\w+)/).each_with_object({}) { |(count, color), hash| hash[color.to_sym] = count.to_i }
         end
       }
