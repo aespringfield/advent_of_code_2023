@@ -9,7 +9,7 @@ module Day02
     def part_one(input)
       input
         .map { |line| clean(line) }
-        .reject { |data| !!data[:cubes].find { |cube_data| !!cube_data.each_pair.find { |color, count| count > (CUBE_SET[color] || 0) } } }
+        .reject { |data| !!data[:cubes].find { |cube_data| !!cube_data.each_pair.find { |color, count| CUBE_SET[color]&.< count } } }
         .sum { |data| data[:game] }
     end
 
