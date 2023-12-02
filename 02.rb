@@ -9,14 +9,13 @@ module Day02
     def part_one(input)
       input
         .map { |line| clean(line) }
-        .reject { |data| !!data[:cubes].find { |cube_data| is_impossible?(cube_data) } }
+        .reject { |data| !!data[:cubes].find { |cube_data| !!cube_data.each_pair.find { |color, count| count > (CUBE_SET[color] || 0) } } }
         .sum { |data| data[:game] }
     end
 
     def part_two(input)
       input
-        .map { |line| clean(line) }
-        .map { |data| counts_by_color(data[:cubes]).values.map(&:max).inject(:*) }
+        .map { |line| clean(line)[:cubes].inject { |memo, cube_data| memo.merge(cube_data) { |_, *counts| counts.max } }.values.inject(:*) }
         .sum
     end
 
@@ -24,36 +23,11 @@ module Day02
 
     def clean(line)
       {
-        game: game_index(line),
+        game: line.match(/^Game (\d+):/).captures.first.to_i,
         cubes: line.split(':')[1].split(';').map do |str|
-          cube_data(str)
+          str.scan(/(\d+) (\w+)/).each_with_object({}) { |(count, color), hash| hash[color.to_sym] = count.to_i }
         end
       }
-    end
-
-    def is_impossible?(cube_data)
-      !!cube_data.each_pair.find do |color, count|
-        CUBE_SET[color].nil? || count > CUBE_SET[color]
-      end
-    end
-
-    def game_index(line)
-      line.match(/^Game (\d+):/).captures.first.to_i
-    end
-
-    def cube_data(str)
-      str.scan(/(\d+) (\w+)/).each_with_object({}) do |(count, color), hash|
-        hash[color.to_sym] = count.to_i
-      end
-    end
-
-    def counts_by_color(cubes)
-      cubes.each_with_object({}) do |cube_data, hash|
-        cube_data.each_pair do |color, count|
-          hash[color] ||= []
-          hash[color] << count
-        end
-      end
     end
   end
 end
