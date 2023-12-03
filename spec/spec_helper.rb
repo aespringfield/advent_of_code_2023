@@ -19,7 +19,7 @@ RSpec.configure do |config|
       @part_two_expected = expected['part_two']
     else
       ('A'..'Z').each do |letter|
-        break unless File.exists?("examples/#{day}/#{letter}.txt")
+        break unless File.exist?("examples/#{day}/#{letter}.txt")
 
         instance_variable_set(
           "@input_#{letter}".to_sym,
