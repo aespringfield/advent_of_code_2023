@@ -98,7 +98,7 @@ module Day03
         column_indices.each do |gear_index|
           number_sets << [
             # Vertically adjacent numbers (above), including diagonals
-            *numbers_vertically_adjacent_to_index(row_index - 1 >= 0 ? row_index - 1 : 0, gear_index),
+            *(row_index - 1 >= 0 ? numbers_vertically_adjacent_to_index(row_index - 1, gear_index) : []),
             # Vertically adjacent numbers (below), including diagonals
             *numbers_vertically_adjacent_to_index(row_index + 1, gear_index),
             # Horizontally adjacent numbers (left & right), if any
@@ -163,8 +163,8 @@ module Day03
 
     def numbers_horizontally_adjacent_to_index(line_index, index)
       [
-        number_at_index(index - 1, line_index) { |number| number.end_column_index },
-        number_at_index(index + 1, line_index) { |number| number.start_column_index }
+        number_at_index(line_index, index - 1) { |number| number.end_column_index - 1 }, # subtract 1 to account for end index being exclusive
+        number_at_index(line_index, index + 1) { |number| number.start_column_index }
       ].compact
     end
 

@@ -172,8 +172,12 @@ describe 'Day03' do
   end
 
   describe '.part_two' do
-    it 'produces the correct output' do
+    it 'produces the correct output for input A' do
       expect(Day03.part_two(@input_A)).to eq(@part_two_expected_A)
+    end
+
+    it 'produces the correct output for input F' do
+      expect(Day03.part_two(@input_F)).to eq(@part_two_expected_F)
     end
 
     context 'when input empty' do
