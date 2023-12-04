@@ -97,13 +97,9 @@ module Day03
       symbol_positions.each_pair.with_object([]) do |(row_index, column_indices), number_sets|
         column_indices.each do |gear_index|
           number_sets << [
-            # Vertically adjacent numbers (above), including diagonals. If row index is 0, then no numbers can be above,
-            # and we don't want it to wrap around to the bottom of the schematic, so we just pass an empty array
-            *(row_index - 1 >= 0 ? numbers_vertically_adjacent_to_index(row_index - 1, gear_index) : []),
-            # Vertically adjacent numbers (below), including diagonals
-            *numbers_vertically_adjacent_to_index(row_index + 1, gear_index),
-            # Horizontally adjacent numbers (left & right), if any
-            *numbers_horizontally_adjacent_to_index(row_index, gear_index)
+            *numbers_above_index(row_index, gear_index),
+            *numbers_below_index(row_index, gear_index),
+            *numbers_to_the_left_and_right_of_index(row_index, gear_index)
           ]
         end
       end.select { |number_set| number_set.length == 2 }
@@ -151,6 +147,17 @@ module Day03
         &.then { |lowest_symbol_index_in_range| lowest_symbol_index_in_range&.<=(end_index) }
     end
 
+    # Vertically adjacent numbers (above), including diagonals. If row index is 0, then no numbers can be above,
+    # and we don't want it to wrap around to the bottom of the schematic, so we just return an empty array
+    def numbers_above_index(line_index, index)
+      line_index - 1 >= 0 ? numbers_vertically_adjacent_to_index(line_index - 1, index) : []
+    end
+
+    # Vertically adjacent numbers (below), including diagonals.
+    def numbers_below_index(line_index, index)
+      numbers_vertically_adjacent_to_index(line_index + 1, index)
+    end
+
     def numbers_vertically_adjacent_to_index(line_index, index)
       numbers = number_positions[line_index]
       # Optimization to avoid iterating over the index ranges of numbers that are too far away
@@ -162,14 +169,14 @@ module Day03
         &.map(&:value) || []
     end
 
-    def numbers_horizontally_adjacent_to_index(line_index, index)
+    def numbers_to_the_left_and_right_of_index(line_index, index)
       [
         number_at_index(line_index, index - 1) { |number| number.end_column_index - 1 }, # subtract 1 to account for end index being exclusive
         number_at_index(line_index, index + 1) { |number| number.start_column_index }
       ].compact
     end
 
-    # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1, for the diagonals)
+    # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1)
     # of the gear index, and only numbers that start within diagonal distance to the right of the gear index
     # (performance optimization to avoid iterating over the entire array)
     #
@@ -189,12 +196,12 @@ module Day03
 
     # inclusion start index = index of first number where end index >= gear proximity minimum (gear_index - 1)
     def inclusion_start_index(array, index, &block)
-      array&.bsearch_index { |element| block.call(element) >= index - DIAGONAL_DISTANCE } # subtract column_distance to account for the diagonal
+      array&.bsearch_index { |element| block.call(element) >= index - DIAGONAL_DISTANCE }
     end
 
     # inclusion end index = index of first number where start index > gear proximity minimum (gear_index + 1)
     def inclusion_end_index(array, index, &block)
-      array&.bsearch_index { |element| block.call(element) > index + DIAGONAL_DISTANCE } # add column_distance to account for the diagonal
+      array&.bsearch_index { |element| block.call(element) > index + DIAGONAL_DISTANCE }
     end
   end
 
