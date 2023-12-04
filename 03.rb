@@ -97,12 +97,12 @@ module Day03
       symbol_positions.each_pair.with_object([]) do |(row_index, column_indices), number_sets|
         column_indices.each do |gear_index|
           number_sets << [
-            # Vertically adjacent gears (above), including diagonals
+            # Vertically adjacent numbers (above), including diagonals
             *numbers_vertically_adjacent_to_index(row_index - 1 >= 0 ? row_index - 1 : 0, gear_index),
-            # Vertically adjacent gears (below), including diagonals
+            # Vertically adjacent numbers (below), including diagonals
             *numbers_vertically_adjacent_to_index(row_index + 1, gear_index),
-            *[number_at_index(gear_index + 1, row_index) { |number| number.start_column_index }].compact,
-            *[number_at_index(gear_index, row_index) { |number| number.end_column_index }].compact
+            # Horizontally adjacent numbers (left & right), if any
+            *numbers_horizontally_adjacent_to_index(row_index, gear_index)
           ]
         end
       end.select { |number_set| number_set.length == 2 }
@@ -159,6 +159,13 @@ module Day03
       relevant_numbers
         &.select { |number| ((number.start_column_index - DIAGONAL_DISTANCE)..number.end_column_index).include?(index) }
         &.map(&:value) || []
+    end
+
+    def numbers_horizontally_adjacent_to_index(line_index, index)
+      [
+        number_at_index(index - 1, line_index) { |number| number.end_column_index },
+        number_at_index(index + 1, line_index) { |number| number.start_column_index }
+      ].compact
     end
 
     # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1, for the diagonals)
