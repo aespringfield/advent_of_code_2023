@@ -97,7 +97,8 @@ module Day03
       symbol_positions.each_pair.with_object([]) do |(row_index, column_indices), number_sets|
         column_indices.each do |gear_index|
           number_sets << [
-            # Vertically adjacent numbers (above), including diagonals
+            # Vertically adjacent numbers (above), including diagonals. If row index is 0, then no numbers can be above,
+            # and we don't want it to wrap around to the bottom of the schematic, so we just pass an empty array
             *(row_index - 1 >= 0 ? numbers_vertically_adjacent_to_index(row_index - 1, gear_index) : []),
             # Vertically adjacent numbers (below), including diagonals
             *numbers_vertically_adjacent_to_index(row_index + 1, gear_index),
