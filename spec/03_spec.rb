@@ -191,5 +191,39 @@ describe 'Day03' do
         expect(Day03.part_two(input)).to eq(0)
       end
     end
+
+    context 'when contains a gear' do
+      context 'when horizontal' do
+        let(:input) { [ '234*783' ] }
+
+        it 'returns correct value' do
+          expect(Day03.part_two(input)).to eq(183_222)
+        end
+      end
+
+      context 'when vertical' do
+        let(:input) { [ '.234..', '..*...', '..22.' ] }
+
+        it 'returns correct value' do
+          expect(Day03.part_two(input)).to eq(5148)
+        end
+      end
+
+      context 'when diagonal to left' do
+        let(:input) { [ '23...', '..*...', '22...' ] }
+
+        it 'returns correct value' do
+          expect(Day03.part_two(input)).to eq(506)
+        end
+      end
+
+      context 'when diagonal to right' do
+        let(:input) { [ '...23', '..*...', '...22' ] }
+
+        it 'returns correct value' do
+          expect(Day03.part_two(input)).to eq(506)
+        end
+      end
+    end
   end
 end
