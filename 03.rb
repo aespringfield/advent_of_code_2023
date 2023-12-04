@@ -80,6 +80,8 @@ module Day03
   class Schematic
     attr_reader :number_positions, :symbol_positions
 
+    DIAGONAL_DISTANCE = 1
+
     def initialize(number_positions:, symbol_positions:)
       @number_positions = number_positions
       @symbol_positions = symbol_positions
@@ -96,9 +98,9 @@ module Day03
         column_indices.each do |gear_index|
           number_sets << [
             # Vertically adjacent gears (above), including diagonals
-            *numbers_within_column_distance_of_index(row_index - 1 >= 0 ? row_index - 1 : 0, gear_index, 1),
+            *numbers_vertically_adjacent_to_index(row_index - 1 >= 0 ? row_index - 1 : 0, gear_index),
             # Vertically adjacent gears (below), including diagonals
-            *numbers_within_column_distance_of_index(row_index + 1, gear_index, 1),
+            *numbers_vertically_adjacent_to_index(row_index + 1, gear_index),
             *[number_at_index(gear_index + 1, row_index) { |number| number.start_column_index }].compact,
             *[number_at_index(gear_index, row_index) { |number| number.end_column_index }].compact
           ]
@@ -148,37 +150,37 @@ module Day03
         &.then { |lowest_symbol_index_in_range| lowest_symbol_index_in_range&.<=(end_index) }
     end
 
-    def numbers_within_column_distance_of_index(line_index, index, column_distance)
+    def numbers_vertically_adjacent_to_index(line_index, index)
       numbers = number_positions[line_index]
       # Optimization to avoid iterating over the index ranges of numbers that are too far away
-      relevant_numbers = relevant_array_section(numbers, index, column_distance, ->(number) { number.end_column_index }, ->(number) { number.start_column_index } )
+      relevant_numbers = relevant_array_section(numbers, index, ->(number) { number.end_column_index }, ->(number) { number.start_column_index } )
 
       # Iterate through numbers, selecting ones where gear index is in range from number start index - 1 to number end index
       relevant_numbers
-        &.select { |number| ((number.start_column_index - column_distance)..number.end_column_index).include?(index) }
+        &.select { |number| ((number.start_column_index - DIAGONAL_DISTANCE)..number.end_column_index).include?(index) }
         &.map(&:value) || []
     end
 
-    # Find array slice that includes only numbers that end within column distance to the left (aka 1, for the diagonals)
-    # of the gear index, and only numbers that start within column distance to the right of the gear index
+    # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1, for the diagonals)
+    # of the gear index, and only numbers that start within diagonal distance to the right of the gear index
     # (performance optimization to avoid iterating over the entire array)
-    def relevant_array_section(array, index, column_distance, start_index_parser, end_index_parser)
+    def relevant_array_section(array, index, start_index_parser, end_index_parser)
       return unless array
 
-      start_index = index > 0 ? inclusion_start_index(array, index, column_distance, &start_index_parser) : 0
-      end_index = index < array.length - 1 ? inclusion_end_index(array, index, column_distance, &end_index_parser) : index
+      start_index = index > 0 ? inclusion_start_index(array, index, &start_index_parser) : 0
+      end_index = index < array.length - 1 ? inclusion_end_index(array, index, &end_index_parser) : index
 
       array.slice(start_index || 0, end_index ? end_index + 1 : array.length)
     end
 
     # inclusion start index = index of first number where end index >= gear proximity minimum (gear_index - 1)
-    def inclusion_start_index(array, index, column_distance, &block)
-      array&.bsearch_index { |element| block.call(element) >= index - column_distance } # subtract column_distance to account for the diagonal
+    def inclusion_start_index(array, index, &block)
+      array&.bsearch_index { |element| block.call(element) >= index - DIAGONAL_DISTANCE } # subtract column_distance to account for the diagonal
     end
 
     # inclusion end index = index of first number where start index > gear proximity minimum (gear_index + 1)
-    def inclusion_end_index(array, index, column_distance, &block)
-      array&.bsearch_index { |element| block.call(element) > index + column_distance } # add column_distance to account for the diagonal
+    def inclusion_end_index(array, index, &block)
+      array&.bsearch_index { |element| block.call(element) > index + DIAGONAL_DISTANCE } # add column_distance to account for the diagonal
     end
   end
 
