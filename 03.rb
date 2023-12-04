@@ -154,7 +154,7 @@ module Day03
     def numbers_vertically_adjacent_to_index(line_index, index)
       numbers = number_positions[line_index]
       # Optimization to avoid iterating over the index ranges of numbers that are too far away
-      relevant_numbers = relevant_array_section(numbers, index, ->(number) { number.end_column_index }, ->(number) { number.start_column_index } )
+      relevant_numbers = relevant_array_section(numbers, index, ->(number) { number.start_column_index }, ->(number) { number.end_column_index } )
 
       # Iterate through numbers, selecting ones where gear index is in range from number start index - 1 to number end index
       relevant_numbers
@@ -172,11 +172,17 @@ module Day03
     # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1, for the diagonals)
     # of the gear index, and only numbers that start within diagonal distance to the right of the gear index
     # (performance optimization to avoid iterating over the entire array)
+    #
+    # start_index_parser and end_index_parser are procs that take an element (in practice, a number)
+    # and return the start or end index of that element. Note that start_index_parser will be passed to the method
+    # that finds the end index, and vice versa. This is because we care about the end index of the number when comparing
+    # finding elements that are out of range to the left of the index, and the start index of the number when
+    # finding elements that are out of range to the right of the index.
     def relevant_array_section(array, index, start_index_parser, end_index_parser)
       return unless array
 
-      start_index = index > 0 ? inclusion_start_index(array, index, &start_index_parser) : 0
-      end_index = index < array.length - 1 ? inclusion_end_index(array, index, &end_index_parser) : index
+      start_index = index > 0 ? inclusion_start_index(array, index, &end_index_parser) : 0
+      end_index = index < array.length - 1 ? inclusion_end_index(array, index, &start_index_parser) : index
 
       array.slice(start_index || 0, end_index ? end_index + 1 : array.length)
     end
