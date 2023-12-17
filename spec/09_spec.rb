@@ -1,4 +1,4 @@
-describe 'Day08' do
+describe 'Day09' do
   describe '.part_one' do
     it 'produces the correct output for input A' do
       expect(Day09.part_one(@input_A)).to eq(@part_one_expected_A)

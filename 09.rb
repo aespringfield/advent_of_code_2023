@@ -15,13 +15,10 @@ module Day09
     end
 
     def sequences_for_history(history)
-      sequences = [history]
+      return [history] if history.all? { |element| element == 0 }
 
-      until sequences.last.all? { |element| element == 0 }
-        sequences << sequences.last.each_cons(2).to_a.map { |a, b| b - a }
-      end
-
-      sequences
+      new_history = history.each_cons(2).to_a.map { |a, b| b - a }
+      [history, *sequences_for_history(new_history)]
     end
   end
 
