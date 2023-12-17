@@ -28,14 +28,14 @@ module Day03
     end
 
     def clean
-      number_positions, symbol_positions = raw_lines.each_with_object({ number_positions: {}, symbol_positions: {} }).with_index do |(line, hash),line_index|
+      number_positions, symbol_coordinates = raw_lines.each_with_object({ number_positions: {}, symbol_coordinates: {} }).with_index do |(line, hash),line_index|
         hash[:number_positions] = { **hash[:number_positions], **number_positions_from_line(line, line_index) }
-        hash[:symbol_positions] = { **hash[:symbol_positions], **symbol_positions_from_line(line, line_index) }
-      end.values_at(:number_positions, :symbol_positions)
+        hash[:symbol_coordinates][line_index] = symbol_coordinates_for_line(line)
+      end.values_at(:number_positions, :symbol_coordinates)
 
       Schematic.new(
         number_positions:,
-        symbol_positions:
+        symbol_coordinates:
       )
     end
 
@@ -64,27 +64,26 @@ module Day03
       number_positions
     end
 
-    def symbol_positions_from_line(raw_line, line_index)
-      symbol_positions = {}
+    def symbol_coordinates_for_line(raw_line)
+      symbol_coordinates = {}
 
-      raw_line.scan(symbol_regex) do
-        symbol_start_index, _ = $~.offset(0)
-        symbol_positions[line_index] ||= []
-        symbol_positions[line_index] << symbol_start_index
+      raw_line.scan(symbol_regex) do |capture|
+        column_index, _ = $~.offset(0)
+        symbol_coordinates[column_index] = capture
       end
 
-      symbol_positions
+      symbol_coordinates
     end
   end
 
   class Schematic
-    attr_reader :number_positions, :symbol_positions
+    attr_reader :number_positions, :symbol_coordinates
 
     DIAGONAL_DISTANCE = 1
 
-    def initialize(number_positions:, symbol_positions:)
+    def initialize(number_positions:, symbol_coordinates:)
       @number_positions = number_positions
-      @symbol_positions = symbol_positions
+      @symbol_coordinates = symbol_coordinates
     end
 
     def numbers_adjacent_to_symbols
@@ -94,12 +93,12 @@ module Day03
     end
 
     def number_pairs_connected_by_symbol
-      symbol_positions.each_pair.with_object([]) do |(row_index, column_indices), number_sets|
-        column_indices.each do |gear_index|
+      symbol_coordinates.keys.each_with_object([]) do |row_index, number_sets|
+        symbol_coordinates[row_index].keys.each do |column_index|
           number_sets << [
-            *numbers_above_index(row_index, gear_index),
-            *numbers_below_index(row_index, gear_index),
-            *numbers_to_the_left_and_right_of_index(row_index, gear_index)
+            *numbers_above_index(row_index, column_index),
+            *numbers_below_index(row_index, column_index),
+            *numbers_to_the_left_and_right_of_index(row_index, column_index)
           ]
         end
       end.select { |number_set| number_set.length == 2 }
@@ -132,7 +131,7 @@ module Day03
     end
 
     def symbol_at_index?(line_index, index)
-      !!symbol_positions[line_index]&.bsearch { |symbol_index| index <=> symbol_index }
+      !symbol_coordinates[line_index]&.[](index).nil?
     end
 
     def number_at_index(line_index, index, &block)
@@ -142,9 +141,9 @@ module Day03
     end
 
     def symbol_in_range?(line_index, start_index, end_index)
-      !!symbol_positions[line_index]
-        &.bsearch { |index| index >= start_index }
-        &.then { |lowest_symbol_index_in_range| lowest_symbol_index_in_range&.<=(end_index) }
+      !(start_index..end_index).to_a.find do |column_index|
+        symbol_coordinates[line_index]&.[](column_index)
+      end.nil?
     end
 
     # Vertically adjacent numbers (above), including diagonals. If row index is 0, then no numbers can be above,
