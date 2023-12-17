@@ -13,7 +13,7 @@ describe 'Day07' do
 
   describe 'Input' do
     describe 'clean' do
-      it 'produces the correct cleaned input when bad_kerning is true' do
+      it 'produces the correct cleaned input' do
         expect(Day07::Input.new(raw_lines: @input).clean).to eq(
           [
             {
