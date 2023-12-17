@@ -28,13 +28,13 @@ module Day03
     end
 
     def clean
-      number_positions, symbol_coordinates = raw_lines.each_with_object({ number_positions: {}, symbol_coordinates: {} }).with_index do |(line, hash),line_index|
-        hash[:number_positions] = { **hash[:number_positions], **number_positions_from_line(line, line_index) }
+      number_coordinates, symbol_coordinates = raw_lines.each_with_object({ number_coordinates: {}, symbol_coordinates: {} }).with_index do |(line, hash),line_index|
+        hash[:number_coordinates][line_index] = number_coordinates_for_line(line, line_index)
         hash[:symbol_coordinates][line_index] = symbol_coordinates_for_line(line)
-      end.values_at(:number_positions, :symbol_coordinates)
+      end.values_at(:number_coordinates, :symbol_coordinates)
 
       Schematic.new(
-        number_positions:,
+        number_coordinates:,
         symbol_coordinates:
       )
     end
@@ -45,23 +45,26 @@ module Day03
       /#{symbols.map { |symbol| "\\#{symbol}" }.join('|')}/
     end
 
-    def number_positions_from_line(raw_line, line_index)
-      number_positions = {}
+    def number_coordinates_for_line(raw_line, line_index)
+      number_coordinates = {}
 
       raw_line.scan(/\d+/) do |capture|
         number = capture.to_i
         number_start_index, number_end_index = $~.offset(0)
 
-        number_positions[line_index] ||= []
-        number_positions[line_index] << SchematicNumber.new(
+        schematic_number = SchematicNumber.new(
           value: number,
           line_index:,
           start_column_index: number_start_index,
           end_column_index: number_end_index # end index from offset is exclusive
         )
+
+        (number_start_index..(number_end_index - 1)).each do |column_index|
+          number_coordinates[column_index] = schematic_number
+        end
       end
 
-      number_positions
+      number_coordinates
     end
 
     def symbol_coordinates_for_line(raw_line)
@@ -77,12 +80,12 @@ module Day03
   end
 
   class Schematic
-    attr_reader :number_positions, :symbol_coordinates
+    attr_reader :number_coordinates, :symbol_coordinates
 
     DIAGONAL_DISTANCE = 1
 
-    def initialize(number_positions:, symbol_coordinates:)
-      @number_positions = number_positions
+    def initialize(number_coordinates:, symbol_coordinates:)
+      @number_coordinates = number_coordinates
       @symbol_coordinates = symbol_coordinates
     end
 
@@ -107,7 +110,7 @@ module Day03
     private
 
     def numbers
-      number_positions.values.flatten
+      number_coordinates.values.map { |line_hash| line_hash.values.uniq(&:start_column_index) }.flatten
     end
 
     def has_symbol_to_left?(number)
@@ -134,10 +137,8 @@ module Day03
       !symbol_coordinates[line_index]&.[](index).nil?
     end
 
-    def number_at_index(line_index, index, &block)
-      number_positions[line_index]
-        &.bsearch { |number| index <=> block.call(number) }
-        &.then(&:value)
+    def number_at_index(line_index, index)
+      number_coordinates[line_index]&.[](index)&.value
     end
 
     def symbol_in_range?(line_index, start_index, end_index)
@@ -146,10 +147,9 @@ module Day03
       end.nil?
     end
 
-    # Vertically adjacent numbers (above), including diagonals. If row index is 0, then no numbers can be above,
-    # and we don't want it to wrap around to the bottom of the schematic, so we just return an empty array
+    # Vertically adjacent numbers (above), including diagonals.
     def numbers_above_index(line_index, index)
-      line_index - 1 >= 0 ? numbers_vertically_adjacent_to_index(line_index - 1, index) : []
+      numbers_vertically_adjacent_to_index(line_index - 1, index)
     end
 
     # Vertically adjacent numbers (below), including diagonals.
@@ -158,49 +158,20 @@ module Day03
     end
 
     def numbers_vertically_adjacent_to_index(line_index, index)
-      numbers = number_positions[line_index]
-      # Optimization to avoid iterating over the index ranges of numbers that are too far away
-      relevant_numbers = relevant_array_section(numbers, index, ->(number) { number.start_column_index }, ->(number) { number.end_column_index } )
+      return [] if line_index < 0
 
-      # Iterate through numbers, selecting ones where gear index is in range from number start index - 1 to number end index
-      relevant_numbers
-        &.select { |number| ((number.start_column_index - DIAGONAL_DISTANCE)..number.end_column_index).include?(index) }
-        &.map(&:value) || []
+      ((index - 1)..(index + 1)).map do |i|
+        next if i < 0
+
+        number_coordinates[line_index]&.[](i)
+      end.compact.uniq(&:start_column_index).map(&:value)
     end
 
     def numbers_to_the_left_and_right_of_index(line_index, index)
       [
-        number_at_index(line_index, index - 1) { |number| number.end_column_index - 1 }, # subtract 1 to account for end index being exclusive
-        number_at_index(line_index, index + 1) { |number| number.start_column_index }
+        number_at_index(line_index, index - 1),
+        number_at_index(line_index, index + 1)
       ].compact
-    end
-
-    # Find array slice that includes only numbers that end within diagonal distance to the left (aka 1)
-    # of the gear index, and only numbers that start within diagonal distance to the right of the gear index
-    # (performance optimization to avoid iterating over the entire array)
-    #
-    # start_index_parser and end_index_parser are procs that take an element (in practice, a number)
-    # and return the start or end index of that element. Note that start_index_parser will be passed to the method
-    # that finds the end index, and vice versa. This is because we care about the end index of the number when comparing
-    # finding elements that are out of range to the left of the index, and the start index of the number when
-    # finding elements that are out of range to the right of the index.
-    def relevant_array_section(array, index, start_index_parser, end_index_parser)
-      return unless array
-
-      start_index = index > 0 ? inclusion_start_index(array, index, &end_index_parser) : 0
-      end_index = index < array.length - 1 ? inclusion_end_index(array, index, &start_index_parser) : index
-
-      array.slice(start_index || 0, end_index ? end_index + 1 : array.length)
-    end
-
-    # inclusion start index = index of first number where end index >= gear proximity minimum (gear_index - 1)
-    def inclusion_start_index(array, index, &block)
-      array&.bsearch_index { |element| block.call(element) >= index - DIAGONAL_DISTANCE }
-    end
-
-    # inclusion end index = index of first number where start index > gear proximity minimum (gear_index + 1)
-    def inclusion_end_index(array, index, &block)
-      array&.bsearch_index { |element| block.call(element) > index + DIAGONAL_DISTANCE }
     end
   end
 
