@@ -14,12 +14,42 @@ describe 'Day10' do
   end
 
   describe '.part_two' do
-    it 'produces the correct output for input A' do
-      expect(Day10.part_two(@input_A)).to eq(@part_two_expected_A)
+    it 'produces the correct output for input D' do
+      expect(Day10.part_two(@input_D)).to eq(@part_two_expected_D)
     end
 
-    it 'produces the correct output for input B' do
-      expect(Day10.part_two(@input_B)).to eq(@part_two_expected_B)
+    it 'produces the correct output for input E' do
+      expect(Day10.part_two(@input_E)).to eq(@part_two_expected_E)
+    end
+
+    it 'produces the correct output for input F' do
+      expect(Day10.part_two(@input_F)).to eq(@part_two_expected_F)
+    end
+  end
+
+  describe '.pipe_at_coordinates' do
+    it 'returns - when all in the same row' do
+      expect(Day10.pipe_at_coordinates([0,1],[0,0], [0,2])).to eq('-')
+    end
+
+    it 'returns | when all in the same column' do
+      expect(Day10.pipe_at_coordinates([1,0],[0,0], [2,0])).to eq('|')
+    end
+
+    it 'returns 7 when same row, previous column then next row, same column' do
+      expect(Day10.pipe_at_coordinates([0,1], [0,0],[1,1])).to eq('7')
+    end
+
+    it 'returns L when previous row, same column then same row, next column' do
+      expect(Day10.pipe_at_coordinates([1,0], [0,0],[1,1])).to eq('L')
+    end
+
+    it 'returns F when same row, next column then next row, same column' do
+      expect(Day10.pipe_at_coordinates([0,0], [0,1],[1,0])).to eq('F')
+    end
+
+    it 'returns J when same row, previous column then previous row, same column' do
+      expect(Day10.pipe_at_coordinates([1,1], [1,0],[0,1])).to eq('J')
     end
   end
 
