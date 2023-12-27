@@ -5,6 +5,6 @@ module ArrayHelpers
       acc << [block_given? ? block.call(el) : el] && next if acc.empty?
 
       acc.last << (block_given? ? block.call(el) : el)
-    end
+    end.reject(&:empty?)
   end
 end
