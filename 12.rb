@@ -1,43 +1,44 @@
-require_relative './lib/array_helpers'
-
 module Day12
   class << self
-    include ArrayHelpers
-
     def part_one(input)
-      Input.new(raw_lines: input).clean
-        .map { |row| options_for_springs(row[:springs], row[:contiguous_damaged_springs]) }
-        .sum
+      Input.new(raw_lines: input).clean.map do |row|
+        springs_options_count(row[:springs], row[:contiguous_damaged_springs])
+      end.sum
     end
 
     def part_two(input)
-      raise NotImplementedError
+      Input.new(raw_lines: input).clean.map do |row|
+        springs_options_count(([row[:springs]] * 5).join('?'), ([row[:contiguous_damaged_springs]] * 5).flatten)
+      end.sum
     end
 
-    def options_for_springs(springs, contiguous_damaged_springs)
-      springs_possibilities = get_springs_possibilities(springs)
-      count_up_possibilities(springs_possibilities.length)
-      springs_possibilities
-        .map { |springs_possibility| springs_possibility.join.scan(/#+/).map(&:length) }
-        .count { |section_length_possibility| section_length_possibility == contiguous_damaged_springs }
-    end
+    def springs_options_count(springs, runs)
+      return 1 if springs.empty? && runs.empty?
+      return 0 if springs.empty? && !runs.empty?
 
-    def get_unknown_indices(springs)
-      springs.each_index.select { |i| springs[i] == '?' }
-    end
+      @cache ||= {}
+      return @cache[[springs, runs]] if @cache[[springs, runs]]
 
-    def get_springs_possibilities(springs)
-      unknown_indices = get_unknown_indices(springs)
+      result = 0
 
-      %w[# .].repeated_permutation(unknown_indices.length).map do |replacement_possibility|
-        springs_possibility = springs.clone
-
-        unknown_indices.each_with_index do |unknown_index, i|
-          springs_possibility[unknown_index] = replacement_possibility[i]
-        end
-
-        springs_possibility
+      if %w[. ?].include? springs[0]
+        springs_index_offset = springs.slice(1, springs.length).index(/[^\.]/) || 0 # Skip repeated .
+        result += springs_options_count(springs[(1 + springs_index_offset)..-1], runs)
       end
+
+      if %w[# ?].include? springs[0]
+        return result if runs.empty?
+        return result if springs.length != runs[0] && !(%w[. ?].include? springs[runs[0]])
+        return result if springs.length < runs.sum + runs.length - 1
+        return result if springs.index('.')&.<(runs[0])
+
+        springs_index_offset = springs.length > runs[0] ? 1 : 0
+        result += springs_options_count(springs[(runs[0] + springs_index_offset)..-1], runs[1..-1])
+      end
+
+      @cache[[springs, runs]] = result
+
+      result
     end
   end
 
@@ -48,8 +49,7 @@ module Day12
 
     def clean
       raw_lines.map do |line|
-        spring_string, contiguous_damaged_springs_string = line.split(' ')
-        springs = spring_string.split('')
+        springs, contiguous_damaged_springs_string = line.split(' ')
         contiguous_damaged_springs = contiguous_damaged_springs_string.split(',').map(&:to_i)
         {
           springs:,
